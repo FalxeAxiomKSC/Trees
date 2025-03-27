@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Database - Native Landscape Design Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            margin-bottom: 30px;
+        }
+        .footer {
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e5;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .plant-card {
+            height: 100%;
+        }
+        .plant-card .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Plant Database</h1>
+            <p class="lead">Native plants for Fayetteville, AR landscapes</p>
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Add New Plant</h3>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlantModal">Add Plant</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Filter Plants</h3>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="filterType" class="form-label">Plant Type</label>
+                                    <select class="form-select" id="filterType">
+                                        <option value="">All Types</option>
+                                        <option value="Tree">Tree</option>
+                                        <option value="Shrub">Shrub</option>
+                                        <option value="Herbaceous perennial">Herbaceous Perennial</option>
+                                        <option value="Grass">Grass</option>
+                                        <option value="Groundcover">Groundcover</option>
+                                        <option value="Vine">Vine</option>
+                                        <option value="Fern">Fern</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="filterSun" class="form-label">Sun Exposure</label>
+                                    <select class="form-select" id="filterSun">
+                                        <option value="">All Sun Conditions</option>
+                                        <option value="Full sun">Full Sun</option>
+                                        <option value="Part sun">Part Sun</option>
+                                        <option value="Part shade">Part Shade</option>
+                                        <option value="Full shade">Full Shade</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="filterWater" class="form-label">Water Needs</label>
+                                    <select class="form-select" id="filterWater">
+                                        <option value="">All Water Needs</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="filterNative" class="form-label">Native Status</label>
+                                    <select class="form-select" id="filterNative">
+                                        <option value="">All Plants</option>
+                                        <option value="native">Native to Arkansas</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="applyFilters" class="btn btn-primary">Apply Filters</button>
+                        <button id="clearFilters" class="btn btn-secondary">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="plantList">
+            <!-- Plant cards will be dynamically inserted here -->
+            {% if plants %}
+                {% for plant in plants %}
+                <div class="col-md-4 mb-4 plant-item" 
+                     data-type="{{ plant.plant_type }}"
+                     data-sun="{{ plant.sun_exposure|join(',') }}"
+                     data-water="{{ plant.water_needs }}"
+                     data-native="{{ 'native' if 'Arkansas' in plant.native_range or 'AR' in plant.native_range else '' }}">
+                    <div class="card plant-card">
+                        {% if plant.image_url %}
+                        <img src="{{ plant.image_url }}" class="card-img-top" alt="{{ plant.common_name }}">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center">
+                            <span class="text-muted">No Image Available</span>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ plant.common_name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ plant.scientific_name }}</h6>
+                            <p class="card-text">
+                                <strong>Type:</strong> {{ plant.plant_type }}<br>
+                                <strong>Sun:</strong> {{ plant.sun_exposure|join(', ') }}<br>
+                                <strong>Water:</strong> {{ plant.water_needs|capitalize }}<br>
+                                <strong>Height:</strong> {{ plant.height_range[0] }}-{{ plant.height_range[1] }} ft<br>
+                                <strong>Bloom:</strong> {{ plant.bloom_time|join(', ') }}
+                            </p>
+                            <button class="btn btn-sm btn-primary view-details" data-plant-id="{{ loop.index0 }}">View Details</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No plants in the database yet. Add some plants to get started!
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Add Plant Modal -->
+        <div class="modal fade" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addPlantModalLabel">Add New Plant</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addPlantForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scientificName" class="form-label">Scientific Name</label>
+                                        <input type="text" class="form-control" id="scientificName" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="commonName" class="form-label">Common Name</label>
+                                        <input type="text" class="form-control" id="commonName" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="plantType" class="form-label">Plant Type</label>
+                                        <select class="form-select" id="plantType" required>
+                                            <option value="">Select Type</option>
+                                            <option value="Tree">Tree</option>
+                                            <option value="Deciduous tree">Deciduous Tree</option>
+                                            <option value="Evergreen tree">Evergreen Tree</option>
+                                            <option value="Shrub">Shrub</option>
+                                            <option value="Deciduous shrub">Deciduous Shrub</option>
+                                            <option value="Evergreen shrub">Evergreen Shrub</option>
+                                            <option value="Herbaceous perennial">Herbaceous Perennial</option>
+                                            <option value="Grass">Grass</option>
+                                            <option value="Groundcover">Groundcover</option>
+                                            <option value="Vine">Vine</option>
+                                            <option value="Fern">Fern</option>
+                                            <option value="Bulb">Bulb</option>
+                                            <option value="Annual">Annual</option>
+                                            <option value="Aquatic">Aquatic</option>
+                                            <option value="Succulent">Succulent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="nativeRange" class="form-label">Native Range</label>
+                                        <input type="text" class="form-control" id="nativeRange" placeholder="e.g., Arkansas, Missouri, Oklahoma">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="hardinessZone" class="form-label">USDA Hardiness Zone</label>
+                                        <input type="text" class="form-control" id="hardinessZone" placeholder="e.g., 5-9">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="heightMin" class="form-label">Min Height (ft)</label>
+                                        <input type="number" class="form-control" id="heightMin" min="0" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="heightMax" class="form-label">Max Height (ft)</label>
+                                        <input type="number" class="form-control" id="heightMax" min="0" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="spreadMin" class="form-label">Min Spread (ft)</label>
+                                        <input type="number" class="form-control" id="spreadMin" min="0" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="spreadMax" class="form-label">Max Spread (ft)</label>
+                                        <input type="number" class="form-control" id="spreadMax" min="0" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="bloomTime" class="form-label">Bloom Time</label>
+                                        <input type="text" class="form-control" id="bloomTime" placeholder="e.g., May, June, July">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="bloomColor" class="form-label">Bloom Color</label>
+                                        <input type="text" class="form-control" id="bloomColor" placeholder="e.g., Blue, Purple">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sunExposure" class="form-label">Sun Exposure</label>
+                                        <select class="form-select" id="sunExposure" multiple>
+                                            <option value="Full sun">Full Sun</option>
+                                            <option value="Part sun">Part Sun</option>
+                                            <option value="Part shade">Part Shade</option>
+                                            <option value="Full shade">Full Shade</option>
+                                        </select>
+                                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="waterNeeds" class="form-label">Water Needs</label>
+                                        <select class="form-select" id="waterNeeds">
+                                            <option value="">Select</option>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="soilType" class="form-label">Soil Type</label>
+                                        <select class="form-select" id="soilType" multiple>
+                                            <option value="Clay">Clay</option>
+                                            <option value="Loam">Loam</option>
+                                            <option value="Sandy">Sandy</option>
+                                            <option value="Silty">Silty</option>
+                                            <option value="Chalky">Chalky</option>
+                                        </select>
+                                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="maintenanceLevel" class="form-label">Maintenance Level</label>
+                                        <select class="form-select" id="maintenanceLevel">
+                                            <option value="">Select</option>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="ecologicalBenefits" class="form-label">Ecological Benefits</label>
+                                <input type="text" class="form-control" id="ecologicalBenefits" placeholder="e.g., Attracts pollinators, Erosion control">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="specialFeatures" class="form-label">Special Features</label>
+                                <input type="text" class="form-control" id="specialFeatures" placeholder="e.g., Fall color, Drought tolerant">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="imageUrl" class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="dataSource" class="form-label">Data Source</label>
+                                <input type="text" class="form-control" id="dataSource" placeholder="e.g., Missouri Botanical Garden">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="savePlantBtn">Save Plant</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plant Details Modal -->
+        <div class="modal fade" id="plantDetailsModal" tabindex="-1" aria-labelledby="plantDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="plantDetailsModalLabel">Plant Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="plantDetailsContent">
+                        <!-- Plant details will be dynamically inserted here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Native Landscape Design Tool</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Plant filtering
+            const applyFiltersBtn = document.getElementById('applyFilters');
+            const clearFiltersBtn = document.getElementById('clearFilters');
+            const plantItems = document.querySelectorAll('.plant-item');
+            
+            applyFiltersBtn.addEventListener('click', function() {
+                const typeFilter = document.getElementById('filterType').value;
+                const sunFilter = document.getElementById('filterSun').value;
+                const waterFilter = document.getElementById('filterWater').value;
+                const nativeFilter = document.getElementById('filterNative').value;
+                
+                plantItems.forEach(item => {
+                    let visible = true;
+                    
+                    // Check type filter
+                    if (typeFilter && item.dataset.type !== typeFilter) {
+                        visible = false;
+                    }
+                    
+                    // Check sun filter
+                    if (sunFilter && !item.dataset.sun.includes(sunFilter)) {
+                        visible = false;
+                    }
+                    
+                    // Check water filter
+                    if (waterFilter && item.dataset.water !== waterFilter) {
+                        visible = false;
+                    }
+                    
+                    // Check native filter
+                    if (nativeFilter && item.dataset.native !== nativeFilter) {
+                        visible = false;
+                    }
+                    
+                    item.style.display = visible ? '' : 'none';
+                });
+            });
+            
+            clearFiltersBtn.addEventListener('click', function() {
+                document.getElementById('filterType').value = '';
+                document.getElementById('filterSun').value = '';
+                document.getElementById('filterWater').value = '';
+                document.getElementById('filterNative').value = '';
+                
+                plantItems.forEach(item => {
+                    item.style.display = '';
+                });
+            });
+            
+            // View plant details
+            const viewDetailsButtons = document.querySelectorAll('.view-details');
+            const plantDetailsContent = document.getElementById('plantDetailsContent');
+            
+            viewDetailsButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const plantId = this.dataset.plantId;
+                    const plantData = {{ plants|tojson|safe }}[plantId];
+                    
+                    let detailsHtml = `
+                        <div class="row">
+                            <div class="col-md-4">
+                                ${plantData.image_url ? 
+                                    `<img src="${plantData.image_url}" class="img-fluid" alt="${plantData.common_name}">` : 
+                                    `<div class="bg-light p-5 text-center"><span class="text-muted">No Image Available</span></div>`
+                                }
+                            </div>
+                            <div class="col-md-8">
+                                <h3>${plantData.common_name}</h3>
+                                <h4 class="text-muted font-italic">${plantData.scientific_name}</h4>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <p><strong>Plant Type:</strong> ${plantData.plant_type}</p>
+                                        <p><strong>Native Range:</strong> ${plantData.native_range.join(', ') || 'Not specified'}</p>
+                                        <p><strong>USDA Hardiness Zone:</strong> ${plantData.usda_hardiness_zone || 'Not specified'}</p>
+                                        <p><strong>Height:</strong> ${plantData.height_range[0]}-${plantData.height_range[1]} ft</p>
+                                        <p><strong>Spread:</strong> ${plantData.spread_range[0]}-${plantData.spread_range[1]} ft</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Bloom Time:</strong> ${plantData.bloom_time.join(', ') || 'Not specified'}</p>
+                                        <p><strong>Bloom Color:</strong> ${plantData.bloom_color.join(', ') || 'Not specified'}</p>
+                                        <p><strong>Sun Exposure:</strong> ${plantData.sun_exposure.join(', ') || 'Not specified'}</p>
+                                        <p><strong>Water Needs:</strong> ${plantData.water_needs ? plantData.water_needs.charAt(0).toUpperCase() + plantData.water_needs.slice(1) : 'Not specified'}</p>
+                                        <p><strong>Soil Type:</strong> ${plantData.soil_type.join(', ') || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <p><strong>Maintenance Level:</strong> ${plantData.maintenance_level ? plantData.maintenance_level.charAt(0).toUpperCase() + plantData.maintenance_level.slice(1) : 'Not specified'}</p>
+                                        <p><strong>Ecological Benefits:</strong> ${plantData.ecological_benefits.join(', ') || 'Not specified'}</p>
+                                        <p><strong>Special Features:</strong> ${plantData.special_features.join(', ') || 'Not specified'}</p>
+                                        <p><strong>Data Source:</strong> ${plantData.data_source || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    plantDetailsContent.innerHTML = detailsHtml;
+                    
+                    // Show the modal
+                    const modal = new bootstrap.Modal(document.getElementById('plantDetailsModal'));
+                    modal.show();
+                });
+            });
+            
+            // Add new plant
+            const savePlantBtn = document.getElementById('savePlantBtn');
+            const addPlantForm = document.getElementById('addPlantForm');
+            
+            savePlantBtn.addEventListener('click', function() {
+                // Basic form validation
+                if (!addPlantForm.checkValidity()) {
+                    addPlantForm.reportValidity();
+                    return;
+                }
+                
+                // Get selected values from multi-select dropdowns
+                const sunExposure = Array.from(document.getElementById('sunExposure').selectedOptions).map(option => option.value);
+                const soilType = Array.from(document.getElementById('soilType').selectedOptions).map(option => option.value);
+                
+                // Collect form data
+                const plantData = {
+                    scientific_name: document.getElementById('scientificName').value,
+                    common_name: document.getElementById('commonName').value,
+                    plant_type: document.getElementById('plantType').value,
+                    native_range: document.getElementById('nativeRange').value.split(',').map(s => s.trim()).filter(s => s),
+                    usda_hardiness_zone: document.getElementById('hardinessZone').value,
+                    height_range: [
+                        parseFloat(document.getElementById('heightMin').value) || 0,
+                        parseFloat(document.getElementById('heightMax').value) || 0
+                    ],
+                    spread_range: [
+                        parseFloat(document.getElementById('spreadMin').value) || 0,
+                        parseFloat(document.getElementById('spreadMax').value) || 0
+                    ],
+                    bloom_time: document.getElementById('bloomTime').value.split(',').map(s => s.trim()).filter(s => s),
+                    bloom_color: document.getElementById('bloomColor').value.split(',').map(s => s.trim()).filter(s => s),
+                    sun_exposure: sunExposure,
+                    water_needs: document.getElementById('waterNeeds').value,
+                    soil_type: soilType,
+                    maintenance_level: document.getElementById('maintenanceLevel').value,
+                    ecological_benefits: document.getElementById('ecologicalBenefits').value.split(',').map(s => s.trim()).filter(s => s),
+                    special_features: document.getElementById('specialFeatures').value.split(',').map(s => s.trim()).filter(s => s),
+                    image_url: document.getElementById('imageUrl').value,
+                    data_source: document.getElementById('dataSource').value
+                };
+                
+                // Send data to server
+                fetch('/api/add_plant', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(plantData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addPlantModal'));
+                        modal.hide();
+                        
+                        // Reload page to show new plant
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
