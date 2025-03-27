@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Site - Native Landscape Design Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="/static/map-styles.css">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            margin-bottom: 30px;
+        }
+        .footer {
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e5;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .progress {
+            height: 5px;
+            margin-bottom: 10px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 5px;
+        }
+        .form-section-header {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Create Site</h1>
+            <p class="lead">Define your site's environmental characteristics</p>
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Map Selection</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="map-instructions">
+                            <p><strong>Instructions:</strong> Use the map to define your site area by drawing a polygon. You can search for a location using the search box in the top-right corner of the map.</p>
+                            <p>Once you've drawn your site boundary, we'll automatically retrieve environmental data for that location.</p>
+                        </div>
+                        
+                        <div class="map-controls">
+                            <button id="resetMap" class="btn btn-secondary">Reset Map</button>
+                            <span class="ms-3">Selected Area: <span id="areaDisplay">0.00</span> sq ft</span>
+                        </div>
+                        
+                        <div id="map" class="map-container"></div>
+                        
+                        <div id="loadingIndicator" class="loading-indicator">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Retrieving environmental data...</p>
+                        </div>
+                        
+                        <div id="mapDataDisplay" class="map-data-display">
+                            <div id="environmentalDataContainer">
+                                <!-- Environmental data will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="siteForm" action="/create_site" method="post">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="formProgress"></div>
+                    </div>
+                    <p class="text-end"><small>Form completion: <span id="progressPercentage">0</span>%</small></p>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Basic Information</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="siteName" class="form-label">Site Name</label>
+                            <input type="text" class="form-control" id="siteName" name="site_name" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Location</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="latitude" class="form-label">Latitude</label>
+                            <input type="text" class="form-control" id="latitude" name="latitude" value="36.0764" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="longitude" class="form-label">Longitude</label>
+                            <input type="text" class="form-control" id="longitude" name="longitude" value="-94.2088" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Dimensions</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="width" class="form-label">Width (ft)</label>
+                            <input type="number" class="form-control" id="width" name="width" min="1" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="length" class="form-label">Length (ft)</label>
+                            <input type="number" class="form-control" id="length" name="length" min="1" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="area" class="form-label">Area (sq ft)</label>
+                            <input type="number" class="form-control" id="area" name="area" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Soil Characteristics</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="soilType" class="form-label">Soil Type</label>
+                            <select class="form-select" id="soilType" name="soil_type" required>
+                                <option value="">Select Soil Type</option>
+                                <option value="clay">Clay</option>
+                                <option value="loam">Loam</option>
+                                <option value="sandy">Sandy</option>
+                                <option value="silty">Silty</option>
+                                <option value="chalky">Chalky</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="soilPh" class="form-label">Soil pH</label>
+                            <input type="number" class="form-control" id="soilPh" name="soil_ph" min="0" max="14" step="0.1" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Sun Exposure</h3>
+                    <p>Estimate the square footage of each sun exposure type in your site.</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="full_sun" class="form-label">Full Sun (6+ hours direct sun)</label>
+                            <input type="number" class="form-control" id="full_sun" name="full_sun" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="part_sun" class="form-label">Part Sun (4-6 hours direct sun)</label>
+                            <input type="number" class="form-control" id="part_sun" name="part_sun" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="part_shade" class="form-label">Part Shade (2-4 hours direct sun)</label>
+                            <input type="number" class="form-control" id="part_shade" name="part_shade" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="full_shade" class="form-label">Full Shade (<2 hours direct sun)</label>
+                            <input type="number" class="form-control" id="full_shade" name="full_shade" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="sunProgress"></div>
+                        </div>
+                        <p class="text-end"><small>Sun exposure allocation: <span id="sunPercentage">0</span>%</small></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Water Conditions</h3>
+                    <p>Estimate the square footage of each water condition type in your site.</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="dry" class="form-label">Dry Areas</label>
+                            <input type="number" class="form-control" id="dry" name="dry" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="medium" class="form-label">Medium Moisture Areas</label>
+                            <input type="number" class="form-control" id="medium" name="medium" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="wet" class="form-label">Wet Areas</label>
+                            <input type="number" class="form-control" id="wet" name="wet" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="progress">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="waterProgress"></div>
+                        </div>
+                        <p class="text-end"><small>Water condition allocation: <span id="waterPercentage">0</span>%</small></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Additional Information</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="hardiness" class="form-label">USDA Hardiness Zone</label>
+                            <select class="form-select" id="hardiness" name="hardiness_zone" required>
+                                <option value="">Select Zone</option>
+                                <option value="5a">5a</option>
+                                <option value="5b">5b</option>
+                                <option value="6a">6a</option>
+                                <option value="6b">6b</option>
+                                <option value="7a">7a</option>
+                                <option value="7b">7b</option>
+                                <option value="8a">8a</option>
+                                <option value="8b">8b</option>
+                                <option value="9a">9a</option>
+                                <option value="9b">9b</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="specialConditions" class="form-label">Special Conditions</label>
+                            <select class="form-select" id="specialConditions" name="special_conditions" multiple>
+                                <option value="deer_pressure">Deer Pressure</option>
+                                <option value="erosion_prone">Erosion Prone</option>
+                                <option value="flood_prone">Flood Prone</option>
+                                <option value="high_wind">High Wind</option>
+                                <option value="salt_exposure">Salt Exposure</option>
+                                <option value="pollution">Urban Pollution</option>
+                            </select>
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">Create Site</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="footer">
+            <p>&copy; 2025 Native Landscape Design Tool</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet.geometryutil@0.10.1/dist/leaflet.geometryutil.js"></script>
+    <script src="/static/map-selection.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Calculate area when width or length changes
+            const widthInput = document.getElementById('width');
+            const lengthInput = document.getElementById('length');
+            const areaInput = document.getElementById('area');
+            
+            function calculateArea() {
+                const width = parseFloat(widthInput.value) || 0;
+                const length = parseFloat(lengthInput.value) || 0;
+                const area = width * length;
+                areaInput.value = area.toFixed(2);
+                
+                // Update progress bars
+                updateProgressBars();
+            }
+            
+            widthInput.addEventListener('input', calculateArea);
+            lengthInput.addEventListener('input', calculateArea);
+            
+            // Update progress bars when sun exposure or water condition inputs change
+            const sunInputs = ['full_sun', 'part_sun', 'part_shade', 'full_shade'];
+            const waterInputs = ['dry', 'medium', 'wet'];
+            
+            sunInputs.forEach(function(id) {
+                document.getElementById(id).addEventListener('input', updateProgressBars);
+            });
+            
+            waterInputs.forEach(function(id) {
+                document.getElementById(id).addEventListener('input', updateProgressBars);
+            });
+            
+            // Update all form fields when any field changes
+            const formInputs = document.querySelectorAll('input, select, textarea');
+            formInputs.forEach(function(input) {
+                input.addEventListener('input', updateProgressBars);
+            });
+            
+            // Initial calculation
+            calculateArea();
+            
+            // Form submission
+            const form = document.getElementById('siteForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validate form
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                // Submit form
+                const formData = new FormData(form);
+                fetch('/create_site', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+        
+        // Update progress bars
+        function updateProgressBars() {
+            // Get total area
+            const areaInput = document.getElementById('area');
+            const totalArea = parseFloat(areaInput.value) || 0;
+            
+            if (totalArea === 0) {
+                return;
+            }
+            
+            // Calculate sun exposure progress
+            const sunInputs = ['full_sun', 'part_sun', 'part_shade', 'full_shade'];
+            let sunTotal = 0;
+            
+            sunInputs.forEach(function(id) {
+                const value = parseFloat(document.getElementById(id).value) || 0;
+                sunTotal += value;
+            });
+            
+            const sunPercentage = Math.min(100, (sunTotal / totalArea) * 100);
+            document.getElementById('sunProgress').style.width = sunPercentage + '%';
+            document.getElementById('sunProgress').setAttribute('aria-valuenow', sunPercentage);
+            document.getElementById('sunPercentage').textContent = sunPercentage.toFixed(1);
+            
+            // Calculate water condition progress
+            const waterInputs = ['dry', 'medium', 'wet'];
+            let waterTotal = 0;
+            
+            waterInputs.forEach(function(id) {
+                const value = parseFloat(document.getElementById(id).value) || 0;
+                waterTotal += value;
+            });
+            
+            const waterPercentage = Math.min(100, (waterTotal / totalArea) * 100);
+            document.getElementById('waterProgress').style.width = waterPercentage + '%';
+            document.getElementById('waterProgress').setAttribute('aria-valuenow', waterPercentage);
+            document.getElementById('waterPercentage').textContent = waterPercentage.toFixed(1);
+            
+            // Calculate overall form progress
+            const requiredInputs = document.querySelectorAll('[required]');
+            let filledCount = 0;
+            
+            requiredInputs.forEach(function(input) {
+                if (input.value.trim() !== '') {
+                    filledCount++;
+                }
+            });
+            
+            const formPercentage = Math.min(100, (filledCount / requiredInputs.length) * 100);
+            document.getElementById('formProgress').style.width = formPercentage + '%';
+            document.getElementById('formProgress').setAttribute('aria-valuenow', formPercentage);
+            document.getElementById('progressPercentage').textContent = formPercentage.toFixed(1);
+        }
+    </script>
+</body>
+</html>
