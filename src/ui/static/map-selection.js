@@ -241,7 +241,7 @@ function updateAreaDisplay(area) {
 }
 
 /**
- * Fetch environmental data for the selected location
+ * Fetch environmental data for the selected location from the server API
  * 
  * @param {number} lat - Latitude
  * @param {number} lng - Longitude
@@ -254,26 +254,57 @@ function fetchEnvironmentalData(lat, lng, polygon) {
         loadingIndicator.classList.add('active');
     }
     
-    // In a real implementation, this would make API calls to various environmental data sources
-    // For this demo, we'll simulate the data fetch with a timeout
-    setTimeout(function() {
-        // Simulate fetched data
-        const environmentalData = {
-            soil_type: getRandomSoilType(),
-            soil_ph: getRandomSoilPH(),
-            hardiness_zone: "7a",
-            sun_exposure: estimateSunExposure(polygon),
-            water_conditions: estimateWaterConditions(polygon)
-        };
+    // Prepare polygon data for the API
+    let polygonData = null;
+    if (polygon) {
+        const latLngs = polygon.getLatLngs()[0];
+        const coordinates = latLngs.map(latLng => [latLng.lng, latLng.lat]);
         
-        // Display the fetched data
-        displayEnvironmentalData(environmentalData);
+        polygonData = {
+            type: 'Polygon',
+            coordinates: [coordinates],
+            area: currentArea
+        };
+    }
+    
+    // Call the server API to get environmental data
+    fetch('/api/environmental_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            latitude: lat,
+            longitude: lng,
+            polygon: polygonData
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Display the fetched data
+            displayEnvironmentalData(result.data);
+        } else {
+            console.error('Error fetching environmental data:', result.message);
+            // Display error message
+            displayErrorMessage('Failed to fetch environmental data. Please try again.');
+        }
         
         // Hide loading indicator
         if (loadingIndicator) {
             loadingIndicator.classList.remove('active');
         }
-    }, 1500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Display error message
+        displayErrorMessage('An error occurred while fetching environmental data. Please try again.');
+        
+        // Hide loading indicator
+        if (loadingIndicator) {
+            loadingIndicator.classList.remove('active');
+        }
+    });
 }
 
 /**
@@ -288,28 +319,114 @@ function displayEnvironmentalData(data) {
     // Create HTML for the data display
     let html = `
         <h5>Environmental Data</h5>
-        <p><strong>Soil Type:</strong> ${data.soil_type}</p>
-        <p><strong>Soil pH:</strong> ${data.soil_ph}</p>
-        <p><strong>Hardiness Zone:</strong> ${data.hardiness_zone}</p>
-        <h6>Estimated Sun Exposure:</h6>
-        <ul>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Soil Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Soil Type:</strong> ${data.soil_type}</p>
+                        <p><strong>Soil pH:</strong> ${data.soil_ph}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Climate Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Hardiness Zone:</strong> ${data.hardiness_zone}</p>
+                        <p><strong>Annual Precipitation:</strong> ${data.annual_precipitation} inches</p>
+                        <p><strong>Average Temperature:</strong> ${data.avg_temperature}°F</p>
+                        <p><strong>Growing Season:</strong> ${data.growing_season_days} days</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-warning">
+                        <h6 class="mb-0">Sun Exposure</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
     `;
     
     // Add sun exposure data
     for (const [type, area] of Object.entries(data.sun_exposure)) {
-        html += `<li>${type}: ${area.toFixed(2)} sq ft (${((area / currentArea) * 100).toFixed(1)}%)</li>`;
-    }
-    
-    html += `</ul><h6>Estimated Water Conditions:</h6><ul>`;
-    
-    // Add water conditions data
-    for (const [type, area] of Object.entries(data.water_conditions)) {
-        html += `<li>${type}: ${area.toFixed(2)} sq ft (${((area / currentArea) * 100).toFixed(1)}%)</li>`;
+        const displayType = type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const percentage = ((area / currentArea) * 100).toFixed(1);
+        html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                ${displayType}
+                <span>${area.toFixed(2)} sq ft (${percentage}%)</span>
+            </li>
+        `;
     }
     
     html += `
-        </ul>
-        <button id="useEnvironmentalData" class="btn btn-success">Use This Data</button>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-info">
+                        <h6 class="mb-0">Water Conditions</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+    `;
+    
+    // Add water conditions data
+    for (const [type, area] of Object.entries(data.water_conditions)) {
+        const displayType = type.charAt(0).toUpperCase() + type.slice(1);
+        const percentage = ((area / currentArea) * 100).toFixed(1);
+        html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                ${displayType}
+                <span>${area.toFixed(2)} sq ft (${percentage}%)</span>
+            </li>
+        `;
+    }
+    
+    html += `
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0">Data Sources</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+    `;
+    
+    // Add data sources
+    for (const source of data.data_sources) {
+        html += `<li>${source}</li>`;
+    }
+    
+    html += `
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <button id="useEnvironmentalData" class="btn btn-success btn-lg">Use This Data</button>
+        </div>
     `;
     
     // Update the container
@@ -322,13 +439,39 @@ function displayEnvironmentalData(data) {
 }
 
 /**
+ * Display an error message
+ * 
+ * @param {string} message - The error message to display
+ */
+function displayErrorMessage(message) {
+    const dataContainer = document.getElementById('environmentalDataContainer');
+    if (!dataContainer) return;
+    
+    dataContainer.innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            <h5>Error</h5>
+            <p>${message}</p>
+        </div>
+        <button id="retryFetch" class="btn btn-primary">Retry</button>
+    `;
+    
+    // Add event listener to retry button
+    document.getElementById('retryFetch').addEventListener('click', function() {
+        if (currentPolygon) {
+            const center = currentPolygon.getBounds().getCenter();
+            fetchEnvironmentalData(center.lat, center.lng, currentPolygon);
+        }
+    });
+}
+
+/**
  * Apply the environmental data to the site form
  */
 function applyEnvironmentalDataToForm() {
     // Get the environmental data from the display
-    const soilTypeText = document.querySelector('#environmentalDataContainer p:nth-child(2)').textContent;
-    const soilPHText = document.querySelector('#environmentalDataContainer p:nth-child(3)').textContent;
-    const hardinessZoneText = document.querySelector('#environmentalDataContainer p:nth-child(4)').textContent;
+    const soilTypeText = document.querySelector('#environmentalDataContainer .card:nth-child(1) p:nth-child(1)').textContent;
+    const soilPHText = document.querySelector('#environmentalDataContainer .card:nth-child(1) p:nth-child(2)').textContent;
+    const hardinessZoneText = document.querySelector('#environmentalDataContainer .card:nth-child(2) p:nth-child(1)').textContent;
     
     // Extract the values
     const soilType = soilTypeText.split(':')[1].trim().toLowerCase();
@@ -364,12 +507,13 @@ function applyEnvironmentalDataToForm() {
         }
     }
     
-    // Set the sun exposure values
-    const sunExposureItems = document.querySelectorAll('#environmentalDataContainer ul:first-of-type li');
+    // Get the sun exposure values from the list items
+    const sunExposureItems = document.querySelectorAll('#environmentalDataContainer .card:nth-child(3) .list-group-item');
     sunExposureItems.forEach(function(item) {
-        const text = item.textContent;
-        const type = text.split(':')[0].trim().toLowerCase().replace(' ', '_');
-        const area = parseFloat(text.split(':')[1].trim().split(' ')[0]);
+        const text = item.textContent.trim();
+        const type = text.split(/\s+/)[0].toLowerCase() + (text.split(/\s+/)[1] ? '_' + text.split(/\s+/)[1].toLowerCase() : '');
+        const areaMatch = text.match(/(\d+\.\d+)\s+sq\s+ft/);
+        const area = areaMatch ? parseFloat(areaMatch[1]) : 0;
         
         const field = document.getElementById(type);
         if (field) {
@@ -377,12 +521,13 @@ function applyEnvironmentalDataToForm() {
         }
     });
     
-    // Set the water condition values
-    const waterConditionItems = document.querySelectorAll('#environmentalDataContainer ul:last-of-type li');
+    // Get the water condition values from the list items
+    const waterConditionItems = document.querySelectorAll('#environmentalDataContainer .card:nth-child(4) .list-group-item');
     waterConditionItems.forEach(function(item) {
-        const text = item.textContent;
-        const type = text.split(':')[0].trim().toLowerCase();
-        const area = parseFloat(text.split(':')[1].trim().split(' ')[0]);
+        const text = item.textContent.trim();
+        const type = text.split(/\s+/)[0].toLowerCase();
+        const areaMatch = text.match(/(\d+\.\d+)\s+sq\s+ft/);
+        const area = areaMatch ? parseFloat(areaMatch[1]) : 0;
         
         const field = document.getElementById(type);
         if (field) {
@@ -430,71 +575,4 @@ function resetSiteFormFields() {
     if (typeof updateProgressBars === 'function') {
         updateProgressBars();
     }
-}
-
-/**
- * Get a random soil type for demo purposes
- * 
- * @returns {string} A random soil type
- */
-function getRandomSoilType() {
-    const soilTypes = ['Clay', 'Loam', 'Sandy', 'Silty', 'Chalky'];
-    return soilTypes[Math.floor(Math.random() * soilTypes.length)];
-}
-
-/**
- * Get a random soil pH for demo purposes
- * 
- * @returns {number} A random soil pH between 5.0 and 7.5
- */
-function getRandomSoilPH() {
-    return (Math.random() * 2.5 + 5.0).toFixed(1);
-}
-
-/**
- * Estimate sun exposure based on the polygon
- * 
- * @param {L.Polygon} polygon - The drawn polygon
- * @returns {Object} Estimated sun exposure areas
- */
-function estimateSunExposure(polygon) {
-    // In a real implementation, this would use topographical data, tree cover, etc.
-    // For this demo, we'll create a random distribution
-    const totalArea = currentArea;
-    
-    // Create random percentages that sum to 100%
-    const fullSunPercent = Math.random() * 0.6 + 0.2; // 20-80%
-    const partSunPercent = Math.random() * 0.3 + 0.1; // 10-40%
-    const partShadePercent = Math.random() * 0.2 + 0.05; // 5-25%
-    const fullShadePercent = 1 - fullSunPercent - partSunPercent - partShadePercent;
-    
-    return {
-        'full_sun': totalArea * fullSunPercent,
-        'part_sun': totalArea * partSunPercent,
-        'part_shade': totalArea * partShadePercent,
-        'full_shade': totalArea * fullShadePercent
-    };
-}
-
-/**
- * Estimate water conditions based on the polygon
- * 
- * @param {L.Polygon} polygon - The drawn polygon
- * @returns {Object} Estimated water condition areas
- */
-function estimateWaterConditions(polygon) {
-    // In a real implementation, this would use topographical data, rainfall data, etc.
-    // For this demo, we'll create a random distribution
-    const totalArea = currentArea;
-    
-    // Create random percentages that sum to 100%
-    const dryPercent = Math.random() * 0.4 + 0.1; // 10-50%
-    const mediumPercent = Math.random() * 0.5 + 0.3; // 30-80%
-    const wetPercent = 1 - dryPercent - mediumPercent;
-    
-    return {
-        'dry': totalArea * dryPercent,
-        'medium': totalArea * mediumPercent,
-        'wet': totalArea * wetPercent
-    };
 }
