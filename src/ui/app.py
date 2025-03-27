@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from src.utils.environmental_data_service import EnvironmentalDataService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -9,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.debug = True
+
+# Initialize environmental data service
+env_data_service = EnvironmentalDataService()
 
 # Data paths
 PLANTS_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'plants', 'plant_database.json')
@@ -145,24 +149,8 @@ def get_environmental_data():
     longitude = data.get('longitude')
     polygon = data.get('polygon')
     
-    # In a real implementation, this would call external APIs
-    # For now, return simulated data
-    environmental_data = {
-        'soil_type': 'Loam',
-        'soil_ph': 6.5,
-        'hardiness_zone': '7a',
-        'sun_exposure': {
-            'full_sun': 500,
-            'part_sun': 300,
-            'part_shade': 200,
-            'full_shade': 100
-        },
-        'water_conditions': {
-            'dry': 400,
-            'medium': 600,
-            'wet': 100
-        }
-    }
+    # Use the environmental data service to get real data
+    environmental_data = env_data_service.get_environmental_data(latitude, longitude, polygon)
     
     return jsonify({'success': True, 'data': environmental_data})
 
