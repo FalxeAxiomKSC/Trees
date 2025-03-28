@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Designs - Native Landscape Design Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/hand-drawn-theme.css">
     <style>
         body {
             padding-top: 20px;
@@ -31,16 +32,16 @@
         <div class="header">
             <h1>Landscape Designs</h1>
             <p class="lead">View and manage your landscape designs</p>
-            <a href="/" class="btn btn-secondary">Back to Home</a>
+            <a href="/" class="btn btn-secondary sketch-btn">Back to Home</a>
         </div>
 
         <div class="row">
             <div class="col-md-12">
-                <div class="card mb-4">
+                <div class="card mb-4 sketch-card">
                     <div class="card-body">
                         <h3>Create New Design</h3>
                         <p>To create a new design, first create a site with environmental characteristics, then generate a design based on that site.</p>
-                        <a href="/site_form" class="btn btn-primary">Create New Site</a>
+                        <a href="/site_form" class="btn btn-primary sketch-btn">Create New Site</a>
                     </div>
                 </div>
             </div>
@@ -48,7 +49,7 @@
 
         <div class="row">
             <div class="col-md-12">
-                <div class="card">
+                <div class="card sketch-card">
                     <div class="card-header">
                         <h3>Saved Designs</h3>
                     </div>
@@ -57,11 +58,11 @@
                             <div class="row" id="designList">
                                 {% for design in designs %}
                                 <div class="col-md-6 mb-4">
-                                    <div class="card design-card">
+                                    <div class="card design-card sketch-card">
                                         <div class="card-body">
                                             <h5 class="card-title">{{ design.replace('.json', '').replace('design_', '').replace('_', ' ').title() }}</h5>
                                             <p class="card-text">
-                                                <button class="btn btn-sm btn-primary view-design" data-design-file="{{ design }}">View Design</button>
+                                                <button class="btn btn-sm btn-primary sketch-btn view-design" data-design-file="{{ design }}">View Design</button>
                                             </p>
                                         </div>
                                     </div>
@@ -81,7 +82,7 @@
         <!-- Design Details Modal -->
         <div class="modal fade" id="designDetailsModal" tabindex="-1" aria-labelledby="designDetailsModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
-                <div class="modal-content">
+                <div class="modal-content sketch-container">
                     <div class="modal-header">
                         <h5 class="modal-title" id="designDetailsModalLabel">Design Details</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -96,7 +97,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary sketch-btn" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -142,8 +143,9 @@
                                 const site = design.site;
                                 const statistics = design.statistics;
                                 
-                                // Format design name
-                                const designName = designFile.replace('.json', '').replace('design_', '').replace('_', ' ').title();
+                                // Format design name - fixed to use JavaScript string methods
+                                const designName = designFile.replace('.json', '').replace('design_', '').replace(/_/g, ' ')
+                                    .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                                 
                                 // Update modal title
                                 document.getElementById('designDetailsModalLabel').textContent = `Design: ${designName}`;
@@ -161,7 +163,7 @@
                                     
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="card mb-4">
+                                            <div class="card mb-4 sketch-card">
                                                 <div class="card-header">
                                                     <h5>Site Information</h5>
                                                 </div>
@@ -176,16 +178,16 @@
                                         </div>
                                         
                                         <div class="col-md-6">
-                                            <div class="card mb-4">
+                                            <div class="card mb-4 sketch-card">
                                                 <div class="card-header">
                                                     <h5>Design Statistics</h5>
                                                 </div>
                                                 <div class="card-body">
                                                     <p><strong>Total Plants:</strong> ${statistics.total_plants}</p>
-                                                    <p><strong>Native Percentage:</strong> ${statistics.native_percentage.toFixed(1)}%</p>
-                                                    <p><strong>Water Usage Score:</strong> ${statistics.water_usage_score.toFixed(1)}/3 (lower is better)</p>
-                                                    <p><strong>Maintenance Score:</strong> ${statistics.maintenance_score.toFixed(1)}/3 (lower is better)</p>
-                                                    <p><strong>Biodiversity Score:</strong> ${statistics.biodiversity_score.toFixed(1)}/100</p>
+                                                    <p><strong>Native Percentage:</strong> ${statistics.native_percentage}%</p>
+                                                    <p><strong>Water Usage Score:</strong> ${statistics.water_usage_score}/3 (lower is better)</p>
+                                                    <p><strong>Maintenance Score:</strong> ${statistics.maintenance_score}/3 (lower is better)</p>
+                                                    <p><strong>Biodiversity Score:</strong> ${statistics.biodiversity_score}/100</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -193,7 +195,7 @@
                                     
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <div class="card">
+                                            <div class="card sketch-card">
                                                 <div class="card-header">
                                                     <h5>Plant Selections</h5>
                                                 </div>
@@ -214,19 +216,27 @@
                                 `;
                                 
                                 // Add plant selections to table
-                                design.plant_selections.forEach(selection => {
-                                    const plant = selection.plant;
+                                if (design.plant_selections && design.plant_selections.length > 0) {
+                                    design.plant_selections.forEach(selection => {
+                                        const plant = selection.plant;
+                                        detailsHtml += `
+                                            <tr>
+                                                <td>${plant.common_name}</td>
+                                                <td><em>${plant.scientific_name}</em></td>
+                                                <td>${plant.type}</td>
+                                                <td>${selection.quantity}</td>
+                                                <td>${selection.zone}</td>
+                                                <td>${selection.score.toFixed(1)}</td>
+                                            </tr>
+                                        `;
+                                    });
+                                } else {
                                     detailsHtml += `
                                         <tr>
-                                            <td>${plant.common_name}</td>
-                                            <td><em>${plant.scientific_name}</em></td>
-                                            <td>${plant.plant_type}</td>
-                                            <td>${selection.quantity}</td>
-                                            <td>${selection.zone_id}</td>
-                                            <td>${selection.score.toFixed(1)}</td>
+                                            <td colspan="6" class="text-center">No plants selected yet. This is a placeholder design.</td>
                                         </tr>
                                     `;
-                                });
+                                }
                                 
                                 detailsHtml += `
                                                             </tbody>
@@ -241,19 +251,21 @@
                                 // Update modal content
                                 designDetailsContent.innerHTML = detailsHtml;
                             } else {
+                                // Show error message
                                 designDetailsContent.innerHTML = `
                                     <div class="alert alert-danger">
-                                        <h4>Error</h4>
+                                        <h4>Error Loading Design</h4>
                                         <p>${data.message}</p>
                                     </div>
                                 `;
                             }
                         })
                         .catch(error => {
+                            // Show error message
                             designDetailsContent.innerHTML = `
                                 <div class="alert alert-danger">
-                                    <h4>Error</h4>
-                                    <p>An error occurred: ${error.message}</p>
+                                    <h4>Error Loading Design</h4>
+                                    <p>${error.message}</p>
                                 </div>
                             `;
                         });
