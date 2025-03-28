@@ -2,14 +2,16 @@
 
 ## Overview
 
-The Native Landscape Design Tool is an application designed to help create sustainable, native landscape designs based on specific environmental conditions in Fayetteville, AR (72704). The tool considers factors such as water needs, soil structure, shade, topography, and other environmental parameters to recommend appropriate native plants for your landscape.
+The Native Landscape Design Tool is an interactive application with a hand-drawn landscape architecture aesthetic designed to help create sustainable, native landscape designs based on specific environmental conditions in Fayetteville, AR (72704). The tool considers factors such as water needs, soil structure, shade, topography, and other environmental parameters to recommend appropriate native plants for your landscape.
 
 ## Features
 
-- **Site Creation**: Define your site's environmental characteristics including dimensions, soil type, sun exposure, and water conditions
-- **Plant Database**: Browse, filter, and manage a database of native plants suitable for the Fayetteville area
-- **Design Generation**: Algorithmically generate landscape designs based on your site's specific conditions
-- **Visualization**: View visual representations of your site conditions and generated designs
+- **Map-Based Location Selection**: Draw polygons to define your exact site boundaries and automatically retrieve environmental data
+- **Hand-Drawn Aesthetic**: Professional landscape architecture drawing style with sketched UI elements
+- **Interactive Plant Placement**: Place plants with intelligent shifting, fixed plants, and environmental compatibility checking
+- **Companion Plant Recommendations**: Receive suggestions for plants that work well with your existing selections
+- **Environmental Data Integration**: Automatically pull data from USDA NRCS, NOAA, and other authoritative sources
+- **Visual Feedback**: Get real-time feedback on plant compatibility and placement
 - **Design Management**: Save, view, and compare multiple landscape designs
 
 ## Getting Started
@@ -36,27 +38,50 @@ The Native Landscape Design Tool is an application designed to help create susta
    http://localhost:5000
    ```
 
-### Creating a Site
+### Creating a Site with Map Selection
 
 1. From the home page, click on "Create Site"
-2. Fill in the site details:
-   - **Basic Information**: Name your site
-   - **Location**: The default coordinates are set for Fayetteville, AR (72704)
-   - **Dimensions**: Specify the width and length of your site in feet
-   - **Soil Characteristics**: Select soil type and pH
-   - **Sun Exposure**: Estimate the square footage of different sun exposure types
-   - **Water Conditions**: Estimate the square footage of different water conditions
-   - **Additional Information**: Specify hardiness zone and any special conditions
+2. Use the map interface to:
+   - Search for a specific location using the search box
+   - Navigate to your desired location
+   - Click the polygon drawing tool in the top-left toolbar
+   - Click on the map to place points defining your site boundary
+   - Complete the polygon by clicking on the first point
+   - The system will automatically calculate the area
 
-3. Click "Create Site" to save your site information
-4. View the generated site conditions visualization
+3. After drawing your site boundary, the system will:
+   - Automatically retrieve environmental data for that location
+   - Display soil information (soil type and pH)
+   - Show climate information (hardiness zone, precipitation, temperature)
+   - Visualize sun exposure distribution
+   - Display water conditions distribution
 
-### Generating a Design
+4. Click "Use This Data" to automatically populate the form fields
+5. Complete any remaining fields and click "Create Site"
 
-1. After creating a site, click "Generate Design"
-2. The system will analyze your site conditions and select appropriate native plants
-3. View the generated design visualization and statistics
-4. Review the plant selections recommended for your site
+### Interactive Plant Placement
+
+1. After creating a site, click "Design Landscape"
+2. Use the plant palette on the left to select plants:
+   - Drag plants from the palette onto the canvas
+   - Plants will be placed at the drop location
+   - Other plants will shift to maintain appropriate spacing
+
+3. Manage plants on the canvas:
+   - Click and drag to move plants
+   - Double-click a plant to toggle its "fixed" status (fixed plants won't be removed)
+   - Fixed plants display a pin icon
+   - Plants with environmental compatibility issues show warning indicators
+
+4. Use companion plant recommendations:
+   - View recommended companion plants based on your existing selections
+   - Click "Add All" to add all recommended plants
+   - New plants are placed near compatible existing plants
+
+5. Handle environmental errors:
+   - Warning indicators appear on incompatible plants
+   - Error messages explain the incompatibility
+   - Click "Fix Location" to automatically move plants to better locations
 
 ### Managing Plants
 
@@ -78,21 +103,24 @@ The Native Landscape Design Tool is an application designed to help create susta
 ```
 landscape-design-tool/
 ├── src/                  # Source code
-│   ├── frontend/         # User interface components
-│   ├── backend/          # Server-side logic
+│   ├── ui/               # User interface components
+│   │   ├── static/       # CSS, JavaScript, and images
+│   │   │   ├── hand-drawn-theme.css           # Hand-drawn aesthetic styles
+│   │   │   ├── plant-placement-system.js      # Interactive plant placement
+│   │   │   ├── stylized-map-visualization.js  # Hand-drawn map visualization
+│   │   │   └── interactive-design-elements.js # Enhanced UI interactions
+│   │   └── templates/    # HTML templates
+│   │       ├── index.html             # Home page
+│   │       ├── site_form_with_map.html # Map-based site creation
+│   │       ├── plant_database.html    # Plant database view
+│   │       └── designs.html           # Designs view
 │   ├── models/           # Data models and algorithms
 │   │   ├── plant.py      # Plant model
 │   │   ├── site.py       # Site model
 │   │   └── design_algorithm.py # Design generation algorithm
 │   ├── utils/            # Utility functions
-│   │   └── visualizer.py # Visualization component
-│   ├── ui/               # User interface
-│   │   ├── app.py        # Flask application
-│   │   └── templates/    # HTML templates
-│   │       ├── index.html       # Home page
-│   │       ├── site_form.html   # Site creation form
-│   │       ├── plant_database.html # Plant database view
-│   │       └── designs.html     # Designs view
+│   │   ├── visualizer.py # Visualization component
+│   │   └── environmental_data_service.py # Data retrieval service
 │   └── config.py         # Configuration settings
 ├── data/                 # Data files
 │   ├── climate/          # Climate data for Fayetteville, AR
@@ -100,8 +128,11 @@ landscape-design-tool/
 │   ├── plants/           # Plant database information
 │   └── designs/          # Saved designs and visualizations
 ├── docs/                 # Documentation
-│   └── development_roadmap.md # Development roadmap
+│   ├── development_roadmap.md           # Development roadmap
+│   ├── visual_redesign_documentation.md # Visual design documentation
+│   └── user_guide.md                    # This user guide
 └── tests/                # Test files
+    └── visual_redesign_tests.js         # Tests for visual components
 ```
 
 ## Technical Details
@@ -114,47 +145,100 @@ landscape-design-tool/
    - `DesignAlgorithm`: Matches plants to appropriate locations based on compatibility
 
 2. **Visualization**:
-   - Uses matplotlib to create visual representations of sites and designs
-   - Generates heatmaps for sun exposure and water conditions
-   - Places plant markers based on compatibility and design principles
+   - Hand-drawn landscape architecture aesthetic
+   - Stylized 2D map visualization with environmental zones
+   - Interactive canvas for plant placement
+   - Visual feedback for plant interactions and errors
 
 3. **User Interface**:
    - Flask-based web application
-   - Responsive Bootstrap frontend
-   - Interactive forms and visualizations
-   - RESTful API endpoints for data operations
+   - Hand-drawn UI elements (buttons, cards, containers)
+   - Interactive map with polygon drawing
+   - Drag-and-drop plant placement
+   - Real-time environmental compatibility checking
 
-### Algorithm
+### Interactive Plant Placement System
 
-The design algorithm works by:
+The interactive plant placement system works by:
 
-1. Filtering plants by basic compatibility with the site
-2. Dividing the site into zones based on environmental conditions
-3. Scoring plants for each zone based on compatibility and design factors
-4. Selecting top-scoring plants for each zone while maintaining diversity
-5. Calculating appropriate quantities based on plant spread and zone area
-6. Generating design statistics including native percentage and biodiversity score
+1. Allowing users to place plants on the canvas via drag-and-drop
+2. Checking environmental compatibility based on plant requirements and site conditions
+3. Intelligently shifting other plants to maintain appropriate spacing
+4. Providing visual feedback for fixed plants and environmental errors
+5. Recommending companion plants based on existing selections
+6. Allowing plants to be designated as "fixed" so they won't be removed
+
+### Environmental Data Integration
+
+The environmental data service:
+
+1. Retrieves soil information from USDA NRCS based on location
+2. Obtains climate data from NOAA for the selected area
+3. Determines the USDA hardiness zone
+4. Maps sun exposure and water conditions across the site
+5. Provides comprehensive environmental data for plant compatibility checking
+
+## Hand-Drawn Aesthetic
+
+The visual design implements:
+
+1. Paper-like background with textured appearance
+2. Sketched UI elements with hand-drawn borders
+3. Custom buttons and form elements with a hand-drawn feel
+4. Stylized visualization of environmental zones
+5. Decorative elements like rocks and paths
+6. Smooth animations for plant movements and interactions
 
 ## Future Development
 
 As outlined in the development roadmap, future enhancements may include:
 
-1. Topography analysis and water flow modeling
-2. Microclimate detection and modeling
-3. Plant community and companion planting recommendations
-4. Seasonal visualization options
-5. Water usage calculation and optimization
-6. Climate change adaptation strategies
-7. Integration with external tools and services
+1. Seasonal visualization to show landscape changes throughout the year
+2. Topography analysis and water flow modeling
+3. Microclimate detection and modeling
+4. Water usage calculation and optimization
+5. Climate change adaptation strategies
+6. Export functionality for designs (PDF, images)
+7. Collaboration features for sharing designs
 
 ## Troubleshooting
 
-If you encounter issues:
+### Common Issues
+
+1. **Plants Not Shifting Properly**
+   - Check if too many plants are set as fixed
+   - Ensure there's enough space in the garden
+   - Try moving plants to less crowded areas
+
+2. **Environmental Errors Persist**
+   - Review the specific environmental requirements
+   - Consider changing the plant selection
+   - Modify the environmental conditions if possible
+
+3. **Performance Issues**
+   - Reduce the number of plants in very large gardens
+   - Close other browser tabs and applications
+   - Check for browser updates
+
+4. **Map Loading Issues**
+   - Ensure you have a stable internet connection
+   - Try refreshing the page
+   - Clear browser cache and cookies
+
+If you encounter other issues:
 
 1. Ensure all dependencies are installed
 2. Check that the data directories exist and have appropriate permissions
 3. Verify that the plant database contains entries
 4. Check the log files for error messages
+
+## Browser Compatibility
+
+The application is compatible with:
+- Chrome 88+
+- Firefox 85+
+- Safari 14+
+- Edge 88+
 
 ## Contact
 
